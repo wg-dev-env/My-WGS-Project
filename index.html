@@ -257,6 +257,26 @@ body {
 }
 .btn-sub:active { background: var(--fill2); transform: scale(0.98); }
 
+/* ── 開智対策ボタン ──────────── */
+.btn-kaichi {
+  width: 100%;
+  padding: 16px;
+  background: var(--orange);
+  color: #fff;
+  border: none;
+  border-radius: var(--r-md);
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+  font-family: inherit;
+  min-height: 56px;
+  margin-top: 22px;
+  box-shadow: 0 2px 10px rgba(255,149,0,0.28);
+}
+.btn-kaichi:active { background: #E07E00; transform: scale(0.98); }
+.btn-kaichi small { display: block; font-size: 12px; font-weight: 500; opacity: 0.92; margin-top: 2px; }
+
 /* ── 確認サマリー ────────────── */
 .confirm-summary {
   background: var(--fill1);
@@ -981,7 +1001,11 @@ textarea.text-input {
         4年生
       </button>
     </div>
-    <button class="btn-sub" onclick="openPdfModal()">📄 プリントテストを作る</button>
+    <button class="btn-kaichi" onclick="openKaichiModal()">
+      🎯 開智対策テストを作る
+      <small>4年漢字・読み3＋書き7の10問（解答つき）</small>
+    </button>
+    <button class="btn-sub" onclick="openPdfModal()" style="margin-top:12px;">📄 プリントテストを作る</button>
     <button class="btn-sub" onclick="openCustomListScreen()" style="margin-top:10px;">📋 カスタムリスト</button>
   </div>
 
@@ -1199,6 +1223,37 @@ textarea.text-input {
 
 <!-- ========== グローバル リセットボタン ========== -->
 <button id="btn-global-reset" onclick="confirmReset()">⛔ 中止</button>
+
+<!-- ========== 開智対策 モーダル ========== -->
+<div class="pdf-overlay" id="kaichi-overlay" onclick="kaichiOverlayClick(event)">
+  <div class="pdf-modal">
+    <div class="pdf-handle"></div>
+    <div class="pdf-modal-title">🎯 開智対策テストを作る</div>
+
+    <div style="font-size:13px;color:var(--text2);background:var(--fill1);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:20px;line-height:1.7;">
+      📌 4年生の漢字から <b>読み3問 → 書き7問</b> の10問を作ります<br>
+      📌 過去問と同じ出題形式（短文の中で問う）です<br>
+      📌 最後に<b>解答ページ</b>が付きます
+    </div>
+
+    <div class="pdf-section-label">作る枚数</div>
+    <div class="choice-grid cols-3" id="kaichi-grp-count" style="margin-bottom:20px;">
+      <button class="choice-btn" onclick="pickKaichi(1,this)">1枚</button>
+      <button class="choice-btn" onclick="pickKaichi(3,this)">3枚</button>
+      <button class="choice-btn" onclick="pickKaichi(5,this)">5枚</button>
+    </div>
+
+    <div style="font-size:13px;color:var(--text2);background:var(--fill1);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:16px;line-height:1.7;">
+      📌 毎回ちがう漢字が出ます（1枚ごとに内容が変わります）<br>
+      📌 生成後、ブラウザの印刷機能でPDF保存できます
+    </div>
+
+    <button class="btn-generate" id="btn-kaichi-gen" onclick="generateKaichiPdf()" disabled>
+      🖨️ テストを生成して印刷する
+    </button>
+    <button class="btn-close-sheet" onclick="closeKaichiModal()">とじる</button>
+  </div>
+</div>
 
 <!-- ========== PDF モーダル ========== -->
 <div class="pdf-overlay" id="pdf-overlay" onclick="overlayClick(event)">
@@ -1708,6 +1763,9 @@ let canvasCSS = 0;
 
 let pdfSel = { grade: null, semester: null, qtype: null, count: null };
 
+// 開智対策用状態（count = 作る枚数）
+let kaichiSel = { count: null };
+
 // カスタムリスト用状態
 let customLists    = [];
 let selCustomList  = null;
@@ -2216,6 +2274,228 @@ ruby rt {
 
 <div class="q-grid">
 ${qHtml}
+</div>
+
+</body>
+</html>`;
+}
+
+
+// ================================================================
+//  開智対策モード（4年漢字・読み3＋書き7の10問テスト）
+// ================================================================
+function openKaichiModal() {
+  kaichiSel = { count: null };
+  document.querySelectorAll('#kaichi-grp-count .choice-btn')
+          .forEach(b => b.classList.remove('selected'));
+  document.getElementById('btn-kaichi-gen').disabled = true;
+  document.getElementById('kaichi-overlay').classList.add('open');
+}
+
+function closeKaichiModal() {
+  document.getElementById('kaichi-overlay').classList.remove('open');
+}
+
+function kaichiOverlayClick(e) {
+  if (e.target === document.getElementById('kaichi-overlay')) closeKaichiModal();
+}
+
+function pickKaichi(val, btn) {
+  kaichiSel.count = val;
+  document.querySelectorAll('#kaichi-grp-count .choice-btn')
+          .forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById('btn-kaichi-gen').disabled = !kaichiSel.count;
+}
+
+// 1枚分（10問）を抽出する。読み3問→書き7問の順。
+// pool から重複なく取り出すため、取り出し済みインデックスを配列で渡す
+function buildKaichiSheet(pool) {
+  const picks = pool.splice(0, 10);          // 先頭から10語（pool は呼び出し側でシャッフル済み）
+  return picks.map((q, i) => ({
+    ...q,
+    qtype: i < 3 ? 'reading' : 'writing',    // ①〜③読み、④〜⑩書き
+  }));
+}
+
+function generateKaichiPdf() {
+  const sheetCount = kaichiSel.count;
+  const need = sheetCount * 10;
+  // 4年生 全学期プールをシャッフル。足りなければ繰り返して補充する
+  let pool = shuffle([...buildPool(4, 0)]);
+  while (pool.length < need) {
+    pool = pool.concat(shuffle([...buildPool(4, 0)]));
+  }
+  const sheets = [];
+  for (let s = 0; s < sheetCount; s++) {
+    sheets.push(buildKaichiSheet(pool));
+  }
+  const html = buildKaichiHtml(sheets);
+  const w = window.open('', '_blank');
+  if (!w) {
+    alert('ポップアップがブロックされました。ブラウザの設定でポップアップを許可してください。');
+    return;
+  }
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  w.print();
+}
+
+// 短文中の対象語を強調（読み＝漢字のまま／書き＝ひらがな読みに置換）
+function kaichiSentence(q) {
+  const target = q.qtype === 'reading' ? q.word : q.reading;
+  const marked = `<span class="kc-target">${target}</span>`;
+  if (q.sentence.includes(q.word)) {
+    return q.sentence.replace(q.word, marked);
+  }
+  // 例文に語がそのまま含まれない場合は末尾に補う
+  return q.sentence + '（' + marked + '）';
+}
+
+function buildKaichiHtml(sheets) {
+  // 問題ページ（1枚＝1ページ）
+  const sheetPages = sheets.map((qs, si) => {
+    const reads = qs.filter(q => q.qtype === 'reading');
+    const writes = qs.filter(q => q.qtype === 'writing');
+    let n = 0;
+    const readHtml = reads.map(q => {
+      n++;
+      return `
+        <div class="kc-q">
+          <div class="kc-num">（${n}）</div>
+          <div class="kc-body">
+            <div class="kc-sentence">${kaichiSentence(q)}</div>
+            <div class="kc-read-line"></div>
+          </div>
+        </div>`;
+    }).join('');
+    const writeHtml = writes.map(q => {
+      n++;
+      return `
+        <div class="kc-q">
+          <div class="kc-num">（${n}）</div>
+          <div class="kc-body">
+            <div class="kc-sentence">${kaichiSentence(q)}</div>
+            <div class="kc-boxes">${[...q.word].map(() => '<span class="kc-box"></span>').join('')}</div>
+          </div>
+        </div>`;
+    }).join('');
+
+    return `
+    <div class="kc-sheet">
+      <div class="kc-header">
+        <div class="kc-title">開智対策　漢字テスト${sheets.length > 1 ? `（${si + 1}枚目）` : ''}</div>
+        <div class="kc-meta">
+          <div class="kc-field" style="flex:2"><span>名前</span><span class="kc-ul"></span></div>
+          <div class="kc-field" style="flex:1.2"><span>日付</span><span class="kc-ul"></span><span>月</span><span class="kc-ul" style="min-width:26px"></span><span>日</span></div>
+          <div class="kc-field kc-score"><span>点数</span><span class="kc-ul"></span><span>／10</span></div>
+        </div>
+      </div>
+
+      <div class="kc-sec-label">一、次の<span class="kc-target">太い字</span>の漢字の読みをひらがなで書きましょう。</div>
+      <div class="kc-list">${readHtml}</div>
+
+      <div class="kc-sec-label" style="margin-top:7mm;">二、次の<span class="kc-target">太い字</span>のことばを漢字で書きましょう。</div>
+      <div class="kc-list">${writeHtml}</div>
+    </div>`;
+  }).join('');
+
+  // 解答ページ
+  const answerBlocks = sheets.map((qs, si) => {
+    const items = qs.map((q, i) => {
+      const ans = q.qtype === 'reading' ? q.reading : q.word;
+      return `<span class="kc-ans-item"><b>（${i + 1}）</b>${ans}</span>`;
+    }).join('');
+    return `
+      <div class="kc-ans-sheet">
+        <div class="kc-ans-head">${sheets.length > 1 ? `${si + 1}枚目` : '解答'}</div>
+        <div class="kc-ans-grid">${items}</div>
+      </div>`;
+  }).join('');
+
+  return `<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>開智対策 漢字テスト（${sheets.length}枚）</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+@page { size: A4 portrait; margin: 15mm; }
+html { background:#fff; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+body {
+  font-family: 'Hiragino Kaku Gothic ProN','Hiragino Sans','Yu Gothic',Meiryo,sans-serif;
+  font-size: 12pt; color:#111; background:#fff;
+  -webkit-print-color-adjust:exact; print-color-adjust:exact;
+}
+.print-controls {
+  background:#fff7ec; border:2px solid #FF9500; border-radius:10px;
+  padding:14px 18px; margin-bottom:16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+}
+.print-controls p { flex:1; color:#333; font-size:10pt; }
+.btn-print {
+  padding:10px 22px; background:#FF9500; color:#fff; border:none; border-radius:8px;
+  font-size:11pt; font-weight:bold; cursor:pointer; font-family:inherit;
+}
+.btn-close-win {
+  padding:10px 16px; background:#fff; color:#666; border:2px solid #ccc; border-radius:8px;
+  font-size:10pt; cursor:pointer; font-family:inherit;
+}
+
+.kc-sheet { page-break-after: always; }
+.kc-header { border-bottom:2.5px solid #333; padding-bottom:8px; margin-bottom:12px; }
+.kc-title { font-size:17pt; font-weight:bold; text-align:center; letter-spacing:2px; margin-bottom:10px; }
+.kc-meta { display:flex; justify-content:space-between; gap:8px; }
+.kc-field { display:flex; align-items:center; gap:4px; font-size:10.5pt; }
+.kc-ul { border-bottom:1.5px solid #333; min-width:28mm; height:5mm; flex:1; }
+.kc-field.kc-score .kc-ul { min-width:14mm; flex:none; }
+
+.kc-sec-label { font-size:11pt; font-weight:bold; margin-bottom:4mm; }
+.kc-target { font-weight:900; border-bottom:2px solid #111; padding:0 1px; }
+
+.kc-list { display:flex; flex-direction:column; gap:3.5mm; }
+.kc-q { display:flex; gap:3mm; align-items:flex-start; }
+.kc-num { font-weight:bold; font-size:12pt; min-width:11mm; padding-top:1mm; }
+.kc-body { flex:1; }
+.kc-sentence { font-size:12.5pt; line-height:1.9; margin-bottom:1.5mm; }
+.kc-read-line { border-bottom:1.6px solid #333; width:70%; height:7mm; }
+.kc-boxes { display:flex; gap:3px; margin-top:1mm; }
+.kc-box { width:12mm; height:12mm; border:1.6px solid #333; position:relative; }
+.kc-box::before { content:''; position:absolute; left:50%; top:0; height:100%; border-left:1px dashed #ccc; }
+.kc-box::after { content:''; position:absolute; left:0; top:50%; width:100%; border-top:1px dashed #ccc; }
+
+/* 解答ページ */
+.kc-answers { page-break-before: always; }
+.kc-ans-title { font-size:15pt; font-weight:bold; text-align:center; margin-bottom:8mm; letter-spacing:2px; border-bottom:2px solid #333; padding-bottom:6px; }
+.kc-ans-sheet { margin-bottom:7mm; }
+.kc-ans-head { font-size:12pt; font-weight:bold; background:#fff2e0; border-left:5px solid #FF9500; padding:4px 10px; margin-bottom:4mm; }
+.kc-ans-grid { display:grid; grid-template-columns:1fr 1fr; gap:3mm 8mm; }
+.kc-ans-item { font-size:12pt; }
+.kc-ans-item b { color:#c05a00; margin-right:3px; }
+
+@media print {
+  .print-controls { display:none !important; }
+  html, body { background:#fff !important; color:#000 !important;
+    -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+  * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+  .kc-q { break-inside: avoid; }
+  .kc-ans-head { background:#fff2e0 !important; border-left:5px solid #FF9500 !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="print-controls">
+  <p>📄 印刷してPDFとして保存できます。「印刷する」ボタンを押してください（最後のページは解答です）。</p>
+  <button class="btn-print" onclick="window.print()">🖨️ 印刷する</button>
+  <button class="btn-close-win" onclick="window.close()">✕ 閉じる</button>
+</div>
+
+${sheetPages}
+
+<div class="kc-answers">
+  <div class="kc-ans-title">解答</div>
+  ${answerBlocks}
 </div>
 
 </body>
