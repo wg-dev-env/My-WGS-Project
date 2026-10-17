@@ -160,6 +160,7 @@ body {
   gap: 10px;
   margin-bottom: 20px;
 }
+.choice-grid.cols-1 { grid-template-columns: 1fr; }
 .choice-grid.cols-2 { grid-template-columns: 1fr 1fr; }
 .choice-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
 .choice-grid.cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
@@ -1005,7 +1006,8 @@ textarea.text-input {
       🎯 開智対策テストを作る
       <small>4年漢字・読み3＋書き7の10問（解答つき）</small>
     </button>
-    <button class="btn-sub" onclick="openPdfModal()" style="margin-top:12px;">📄 プリントテストを作る</button>
+    <button class="btn-sub" onclick="openSpecialModal()" style="margin-top:12px;">📚 特別セット（都道府県・送りがな・同音異義語）</button>
+    <button class="btn-sub" onclick="openPdfModal()" style="margin-top:10px;">📄 プリントテストを作る</button>
     <button class="btn-sub" onclick="openCustomListScreen()" style="margin-top:10px;">📋 カスタムリスト</button>
   </div>
 
@@ -1223,6 +1225,51 @@ textarea.text-input {
 
 <!-- ========== グローバル リセットボタン ========== -->
 <button id="btn-global-reset" onclick="confirmReset()">⛔ 中止</button>
+
+<!-- ========== 特別セット モーダル ========== -->
+<div class="pdf-overlay" id="special-overlay" onclick="specialOverlayClick(event)">
+  <div class="pdf-modal">
+    <div class="pdf-handle"></div>
+    <div class="pdf-modal-title">📚 特別セットを作る</div>
+
+    <div style="font-size:13px;color:var(--text2);background:var(--fill1);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:20px;line-height:1.7;">
+      📌 開智対策でねらわれやすい3つのセットを印刷できます<br>
+      📌 4年生の漢字を<b>全部まとめて</b>出題し、問題文に<b>習う学期</b>を書きます<br>
+      📌 最後に<b>解答ページ</b>が付きます
+    </div>
+
+    <div class="pdf-section-label">セットの種類</div>
+    <div class="choice-grid cols-1" id="special-grp-type" style="margin-bottom:20px;gap:10px;">
+      <button class="choice-btn" onclick="pickSpecialType('pref',this)">
+        🗾 都道府県の漢字<br><small>県名を漢字で書く（書き）</small>
+      </button>
+      <button class="choice-btn" onclick="pickSpecialType('oku',this)">
+        ✏️ 送りがな<br><small>送りがなも正しく書く（書き）</small>
+      </button>
+      <button class="choice-btn" onclick="pickSpecialType('homophone',this)">
+        🔀 同音異義語<br><small>機械／機会 など 使い分け（書き）</small>
+      </button>
+    </div>
+
+    <div id="special-count-wrap">
+      <div class="pdf-section-label">問題数</div>
+      <div class="choice-grid cols-3" id="special-grp-count" style="margin-bottom:20px;">
+        <button class="choice-btn" onclick="pickSpecialCount(10,this)">10問</button>
+        <button class="choice-btn" onclick="pickSpecialCount(15,this)">15問</button>
+        <button class="choice-btn" onclick="pickSpecialCount(20,this)">20問</button>
+      </div>
+    </div>
+
+    <div style="font-size:13px;color:var(--text2);background:var(--fill1);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:16px;line-height:1.7;">
+      📌 生成後、ブラウザの印刷機能でPDF保存できます
+    </div>
+
+    <button class="btn-generate" id="btn-special-gen" onclick="generateSpecialPdf()" disabled>
+      🖨️ テストを生成して印刷する
+    </button>
+    <button class="btn-close-sheet" onclick="closeSpecialModal()">とじる</button>
+  </div>
+</div>
 
 <!-- ========== 開智対策 モーダル ========== -->
 <div class="pdf-overlay" id="kaichi-overlay" onclick="kaichiOverlayClick(event)">
@@ -1745,6 +1792,64 @@ const DATA = {
 };
 
 // ================================================================
+//  特別セット用データ（開智対策）
+// ================================================================
+// ── 都道府県漢字（いずれも4年配当漢字を含む県名）──────────────
+const PREFECTURES = [
+  { word:'茨城',   reading:'いばらき',  sentence:'茨城県は農業がさかんだ。' },
+  { word:'栃木',   reading:'とちぎ',    sentence:'栃木県には日光がある。' },
+  { word:'群馬',   reading:'ぐんま',    sentence:'群馬県には温泉が多い。' },
+  { word:'埼玉',   reading:'さいたま',  sentence:'埼玉県は東京のとなりにある。' },
+  { word:'新潟',   reading:'にいがた',  sentence:'新潟県はお米がおいしい。' },
+  { word:'富山',   reading:'とやま',    sentence:'富山県は富山湾に面している。' },
+  { word:'福井',   reading:'ふくい',    sentence:'福井県で恐竜の化石が見つかる。' },
+  { word:'山梨',   reading:'やまなし',  sentence:'山梨県はぶどうの産地だ。' },
+  { word:'岐阜',   reading:'ぎふ',      sentence:'岐阜県は山に囲まれている。' },
+  { word:'静岡',   reading:'しずおか',  sentence:'静岡県はお茶の産地だ。' },
+  { word:'愛知',   reading:'あいち',    sentence:'愛知県は自動車工業がさかんだ。' },
+  { word:'滋賀',   reading:'しが',      sentence:'滋賀県に琵琶湖がある。' },
+  { word:'大阪',   reading:'おおさか',  sentence:'大阪府は関西地方の中心だ。' },
+  { word:'奈良',   reading:'なら',      sentence:'奈良県に大きな大仏がある。' },
+  { word:'岡山',   reading:'おかやま',  sentence:'岡山県はももの産地だ。' },
+  { word:'香川',   reading:'かがわ',    sentence:'香川県はうどんで有名だ。' },
+  { word:'愛媛',   reading:'えひめ',    sentence:'愛媛県はみかんの産地だ。' },
+  { word:'福岡',   reading:'ふくおか',  sentence:'福岡県は九州で一番大きな都市がある。' },
+  { word:'佐賀',   reading:'さが',      sentence:'佐賀県は焼き物で知られている。' },
+  { word:'長崎',   reading:'ながさき',  sentence:'長崎県は港町として有名だ。' },
+  { word:'熊本',   reading:'くまもと',  sentence:'熊本県に大きな城がある。' },
+  { word:'宮崎',   reading:'みやざき',  sentence:'宮崎県は南国の気候だ。' },
+  { word:'鹿児島', reading:'かごしま',  sentence:'鹿児島県に桜島がある。' },
+  { word:'沖縄',   reading:'おきなわ',  sentence:'沖縄県の海は青くて美しい。' },
+  { word:'宮城',   reading:'みやぎ',    sentence:'宮城県は仙台市が中心だ。' },
+  { word:'神奈川', reading:'かながわ',  sentence:'神奈川県には横浜市がある。' },
+];
+
+// ── 同音異義語（読みが同じで意味がちがう語。4年漢字を中心に学年相応の語のみ）──
+const HOMOPHONES = [
+  { reading:'きかい',   items:[
+    { word:'機械', sentence:'工場の機械を動かす。' },
+    { word:'機会', sentence:'またとない機会をのがす。' } ] },
+  { reading:'じてん',   items:[
+    { word:'辞典', sentence:'国語辞典で言葉を調べる。' },
+    { word:'事典', sentence:'百科事典で動物を調べる。' } ] },
+  { reading:'いがい',   items:[
+    { word:'以外', sentence:'わたし以外はみんな賛成だ。' },
+    { word:'意外', sentence:'意外な結果におどろく。' } ] },
+  { reading:'あつい',   items:[
+    { word:'熱い', sentence:'熱いお茶を飲む。' },
+    { word:'暑い', sentence:'今日はとても暑い一日だ。' } ] },
+  { reading:'はかる',   items:[
+    { word:'量る', sentence:'体重を量る。' },
+    { word:'計る', sentence:'ストップウォッチで時間を計る。' } ] },
+  { reading:'かんしん', items:[
+    { word:'関心', sentence:'宇宙に関心を持つ。' },
+    { word:'感心', sentence:'りっぱな行いに感心する。' } ] },
+  { reading:'まわり',   items:[
+    { word:'周り', sentence:'学校の周りを走る。' },
+    { word:'回り', sentence:'遠回りをして家に帰る。' } ] },
+];
+
+// ================================================================
 //  回データ（学年・学期・回 → 対象漢字リスト）
 // ================================================================
 // ================================================================
@@ -1765,6 +1870,9 @@ let pdfSel = { grade: null, semester: null, qtype: null, count: null };
 
 // 開智対策用状態（count = 作る枚数）
 let kaichiSel = { count: null };
+
+// 特別セット用状態（type = pref|oku|homophone, count = 問題数）
+let specialSel = { type: null, count: null };
 
 // カスタムリスト用状態
 let customLists    = [];
@@ -2496,6 +2604,234 @@ ${sheetPages}
 <div class="kc-answers">
   <div class="kc-ans-title">解答</div>
   ${answerBlocks}
+</div>
+
+</body>
+</html>`;
+}
+
+
+// ================================================================
+//  特別セットモード（都道府県・送りがな・同音異義語）
+// ================================================================
+function openSpecialModal() {
+  specialSel = { type: null, count: null };
+  document.querySelectorAll('#special-grp-type .choice-btn,#special-grp-count .choice-btn')
+          .forEach(b => b.classList.remove('selected'));
+  document.getElementById('special-count-wrap').style.display = '';
+  document.getElementById('btn-special-gen').disabled = true;
+  document.getElementById('special-overlay').classList.add('open');
+}
+
+function closeSpecialModal() {
+  document.getElementById('special-overlay').classList.remove('open');
+}
+
+function specialOverlayClick(e) {
+  if (e.target === document.getElementById('special-overlay')) closeSpecialModal();
+}
+
+function pickSpecialType(val, btn) {
+  specialSel.type = val;
+  document.querySelectorAll('#special-grp-type .choice-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  // 同音異義語は全ペア固定出題のため問題数は不要
+  const countWrap = document.getElementById('special-count-wrap');
+  if (val === 'homophone') {
+    countWrap.style.display = 'none';
+    specialSel.count = null;
+  } else {
+    countWrap.style.display = '';
+  }
+  updateSpecialGenBtn();
+}
+
+function pickSpecialCount(val, btn) {
+  specialSel.count = val;
+  document.querySelectorAll('#special-grp-count .choice-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  updateSpecialGenBtn();
+}
+
+function updateSpecialGenBtn() {
+  const ok = specialSel.type === 'homophone'
+    ? true
+    : (specialSel.type && specialSel.count);
+  document.getElementById('btn-special-gen').disabled = !ok;
+}
+
+function generateSpecialPdf() {
+  const type = specialSel.type;
+  let html;
+  if (type === 'homophone') {
+    html = buildSpecialHtml('homophone', HOMOPHONES);
+  } else {
+    let pool;
+    if (type === 'pref') {
+      pool = PREFECTURES.map(p => ({ ...p, tag: '4年・都道府県' }));
+    } else { // oku（送りがな）：DATA[4]から語尾がかなの語を学期つきで集める
+      pool = [];
+      [1, 2, 3].forEach(s => {
+        DATA[4][s].forEach(q => {
+          if (/[ぁ-ん]$/.test(q.word)) pool.push({ ...q, tag: `4年${s}学期` });
+        });
+      });
+    }
+    const items = shuffle([...pool]).slice(0, specialSel.count);
+    html = buildSpecialHtml(type, items);
+  }
+  const w = window.open('', '_blank');
+  if (!w) {
+    alert('ポップアップがブロックされました。ブラウザの設定でポップアップを許可してください。');
+    return;
+  }
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  w.print();
+}
+
+// 短文中の対象語をひらがな読みに置換して強調（書き問題）
+function specialWriteSentence(q) {
+  const marked = `<span class="kc-target">${q.reading}</span>`;
+  if (q.sentence.includes(q.word)) return q.sentence.replace(q.word, marked);
+  return q.sentence + '（' + marked + '）';
+}
+
+function buildSpecialHtml(type, payload) {
+  const titleMap = { pref: '都道府県の漢字テスト', oku: '送りがなテスト', homophone: '同音異義語テスト' };
+  const instMap = {
+    pref: '次の都道府県名を漢字で書きましょう。',
+    oku:  '次のことばを漢字で書きましょう。送りがなも正しく書きましょう。',
+    homophone: '次の読みのことばを、文に合うように正しい漢字で書きましょう。',
+  };
+  const title = titleMap[type];
+
+  let bodyHtml = '';
+  let answerHtml = '';
+
+  if (type === 'homophone') {
+    let n = 0;
+    bodyHtml = payload.map(pair => {
+      const subs = pair.items.map(it => {
+        n++;
+        return `
+          <div class="kc-q">
+            <div class="kc-num">（${n}）</div>
+            <div class="kc-body">
+              <div class="kc-sentence">${specialWriteSentence({ word: it.word, reading: pair.reading, sentence: it.sentence })}</div>
+              <div class="kc-boxes">${[...it.word].map(() => '<span class="kc-box"></span>').join('')}</div>
+            </div>
+          </div>`;
+      }).join('');
+      return `
+        <div class="sp-group">
+          <div class="sp-group-head">「${pair.reading}」</div>
+          ${subs}
+        </div>`;
+    }).join('');
+
+    let an = 0;
+    const ansItems = payload.flatMap(pair => pair.items.map(it => { an++; return `<span class="kc-ans-item"><b>（${an}）</b>${it.word}</span>`; })).join('');
+    answerHtml = `<div class="kc-ans-grid">${ansItems}</div>`;
+  } else {
+    bodyHtml = `<div class="kc-list">` + payload.map((q, i) => `
+      <div class="kc-q">
+        <div class="kc-num">（${i + 1}）</div>
+        <div class="kc-body">
+          <div class="kc-sentence">${specialWriteSentence(q)} <span class="sp-tag">【${q.tag}】</span></div>
+          <div class="kc-boxes">${[...q.word].map(() => '<span class="kc-box"></span>').join('')}</div>
+        </div>
+      </div>`).join('') + `</div>`;
+
+    const ansItems = payload.map((q, i) => `<span class="kc-ans-item"><b>（${i + 1}）</b>${q.word}</span>`).join('');
+    answerHtml = `<div class="kc-ans-grid">${ansItems}</div>`;
+  }
+
+  return `<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>${title}</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+@page { size: A4 portrait; margin: 15mm; }
+html { background:#fff; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+body {
+  font-family: 'Hiragino Kaku Gothic ProN','Hiragino Sans','Yu Gothic',Meiryo,sans-serif;
+  font-size: 12pt; color:#111; background:#fff;
+  -webkit-print-color-adjust:exact; print-color-adjust:exact;
+}
+.print-controls {
+  background:#f6f0fb; border:2px solid #AF52DE; border-radius:10px;
+  padding:14px 18px; margin-bottom:16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+}
+.print-controls p { flex:1; color:#333; font-size:10pt; }
+.btn-print { padding:10px 22px; background:#AF52DE; color:#fff; border:none; border-radius:8px; font-size:11pt; font-weight:bold; cursor:pointer; font-family:inherit; }
+.btn-close-win { padding:10px 16px; background:#fff; color:#666; border:2px solid #ccc; border-radius:8px; font-size:10pt; cursor:pointer; font-family:inherit; }
+
+.kc-header { border-bottom:2.5px solid #333; padding-bottom:8px; margin-bottom:12px; }
+.kc-title { font-size:17pt; font-weight:bold; text-align:center; letter-spacing:2px; margin-bottom:10px; }
+.kc-meta { display:flex; justify-content:space-between; gap:8px; }
+.kc-field { display:flex; align-items:center; gap:4px; font-size:10.5pt; }
+.kc-ul { border-bottom:1.5px solid #333; min-width:28mm; height:5mm; flex:1; }
+.kc-field.kc-score .kc-ul { min-width:14mm; flex:none; }
+
+.kc-inst { font-size:11pt; font-weight:bold; margin-bottom:4mm; }
+.kc-target { font-weight:900; border-bottom:2px solid #111; padding:0 1px; }
+.sp-tag { font-size:8.5pt; color:#7a3ca0; font-weight:600; white-space:nowrap; }
+
+.kc-list { display:flex; flex-direction:column; gap:4mm; }
+.kc-q { display:flex; gap:3mm; align-items:flex-start; }
+.kc-num { font-weight:bold; font-size:12pt; min-width:11mm; padding-top:1mm; }
+.kc-body { flex:1; }
+.kc-sentence { font-size:12.5pt; line-height:1.9; margin-bottom:1.5mm; }
+.kc-boxes { display:flex; gap:3px; margin-top:1mm; }
+.kc-box { width:12mm; height:12mm; border:1.6px solid #333; position:relative; }
+.kc-box::before { content:''; position:absolute; left:50%; top:0; height:100%; border-left:1px dashed #ccc; }
+.kc-box::after { content:''; position:absolute; left:0; top:50%; width:100%; border-top:1px dashed #ccc; }
+
+.sp-group { margin-bottom:5mm; padding-left:2mm; border-left:4px solid #e3cdf2; }
+.sp-group-head { font-size:12pt; font-weight:bold; color:#7a3ca0; margin:0 0 2mm 1mm; }
+
+.kc-answers { page-break-before: always; }
+.kc-ans-title { font-size:15pt; font-weight:bold; text-align:center; margin-bottom:8mm; letter-spacing:2px; border-bottom:2px solid #333; padding-bottom:6px; }
+.kc-ans-grid { display:grid; grid-template-columns:1fr 1fr; gap:3mm 8mm; }
+.kc-ans-item { font-size:12pt; }
+.kc-ans-item b { color:#7a3ca0; margin-right:3px; }
+
+@media print {
+  .print-controls { display:none !important; }
+  html, body { background:#fff !important; color:#000 !important; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+  * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+  .kc-q, .sp-group { break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+
+<div class="print-controls">
+  <p>📄 印刷してPDFとして保存できます。「印刷する」ボタンを押してください（最後のページは解答です）。</p>
+  <button class="btn-print" onclick="window.print()">🖨️ 印刷する</button>
+  <button class="btn-close-win" onclick="window.close()">✕ 閉じる</button>
+</div>
+
+<div class="kc-header">
+  <div class="kc-title">${title}</div>
+  <div class="kc-meta">
+    <div class="kc-field" style="flex:2"><span>名前</span><span class="kc-ul"></span></div>
+    <div class="kc-field" style="flex:1.2"><span>日付</span><span class="kc-ul"></span><span>月</span><span class="kc-ul" style="min-width:26px"></span><span>日</span></div>
+    <div class="kc-field kc-score"><span>点数</span><span class="kc-ul"></span><span>点</span></div>
+  </div>
+</div>
+
+<div class="kc-inst">${instMap[type]}</div>
+
+${bodyHtml}
+
+<div class="kc-answers">
+  <div class="kc-ans-title">解答</div>
+  ${answerHtml}
 </div>
 
 </body>
