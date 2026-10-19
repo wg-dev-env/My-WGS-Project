@@ -1233,8 +1233,8 @@ textarea.text-input {
     <div class="pdf-modal-title">📚 特別セットを作る</div>
 
     <div style="font-size:13px;color:var(--text2);background:var(--fill1);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:20px;line-height:1.7;">
-      📌 開智対策でねらわれやすい3つのセットを印刷できます<br>
-      📌 4年生の漢字を<b>全部まとめて</b>出題し、問題文に<b>習う学期</b>を書きます<br>
+      📌 開智対策でねらわれやすい4つのセットを印刷できます<br>
+      📌 漢字のセットは4年生の漢字を<b>全部まとめて</b>出題します<br>
       📌 最後に<b>解答ページ</b>が付きます
     </div>
 
@@ -1248,6 +1248,9 @@ textarea.text-input {
       </button>
       <button class="choice-btn" onclick="pickSpecialType('homophone',this)">
         🔀 同音異義語<br><small>機械／機会 など 使い分け（書き）</small>
+      </button>
+      <button class="choice-btn" onclick="pickSpecialType('idiom',this)">
+        💬 慣用句・ことわざ<br><small>体の一部・漢数字を入れる（開智 大問二）</small>
       </button>
     </div>
 
@@ -2042,6 +2045,49 @@ const HOMOPHONES = [
   { reading:'まわり',   items:[
     { word:'周り', sentence:'学校の周りを走る。' },
     { word:'回り', sentence:'遠回りをして家に帰る。' } ] },
+];
+
+// ── 慣用句・ことわざ（開智 国語 大問二：〔　〕に体の一部／漢数字を入れる）──
+// text の「〔　〕」が空欄。answers は空欄に入る漢字（出てくる順）。cat: 体=体の一部, 数=漢数字
+const IDIOMS = [
+  // 体の一部
+  { cat:'体', text:'〔　〕が広い',        answers:['顔'], mean:'知り合いが多い' },
+  { cat:'体', text:'〔　〕を貸す',        answers:['耳'], mean:'人の話を聞いてやる' },
+  { cat:'体', text:'〔　〕を洗う',        answers:['足'], mean:'悪いことをやめる' },
+  { cat:'体', text:'〔　〕が高い',        answers:['鼻'], mean:'とくいである' },
+  { cat:'体', text:'〔　〕が肥える',      answers:['目'], mean:'よい物を見分ける力がつく' },
+  { cat:'体', text:'〔　〕が軽い',        answers:['口'], mean:'すぐ秘密を話してしまう' },
+  { cat:'体', text:'〔　〕を借りる',      answers:['手'], mean:'手伝ってもらう' },
+  { cat:'体', text:'〔　〕が下がる',      answers:['頭'], mean:'感心して尊敬する' },
+  { cat:'体', text:'〔　〕が立つ',        answers:['腹'], mean:'おこる' },
+  { cat:'体', text:'〔　〕を長くする',    answers:['首'], mean:'今か今かと待つ' },
+  { cat:'体', text:'〔　〕が立たない',    answers:['歯'], mean:'とてもかなわない' },
+  { cat:'体', text:'〔　〕を持つ',        answers:['肩'], mean:'みかたをする' },
+  { cat:'体', text:'〔　〕を折る',        answers:['骨'], mean:'苦労して努力する' },
+  { cat:'体', text:'〔　〕を巻く',        answers:['舌'], mean:'とても感心する' },
+  { cat:'体', text:'〔　〕をなで下ろす',  answers:['胸'], mean:'ほっと安心する' },
+  { cat:'体', text:'〔　〕に余る',        answers:['目'], mean:'ひどすぎて見過ごせない' },
+  { cat:'体', text:'〔　〕に汗をにぎる',  answers:['手'], mean:'はらはらする' },
+  { cat:'体', text:'〔　〕を明かす',      answers:['鼻'], mean:'出しぬいておどろかせる' },
+  { cat:'体', text:'〔　〕をそろえる',    answers:['口'], mean:'みんなが同じことを言う' },
+  { cat:'体', text:'〔　〕を立てる',      answers:['顔'], mean:'めんぼくを保たせる' },
+  // 漢数字
+  { cat:'数', text:'〔　〕を聞いて〔　〕を知る', answers:['一','十'], mean:'少し聞いただけで全部わかる' },
+  { cat:'数', text:'〔　〕の足をふむ',          answers:['二'], mean:'ためらう' },
+  { cat:'数', text:'〔　〕日ぼうず',            answers:['三'], mean:'あきっぽくて長続きしない' },
+  { cat:'数', text:'〔　〕石〔　〕鳥',          answers:['一','二'], mean:'一つで二つの得をする' },
+  { cat:'数', text:'〔　〕人〔　〕色',          answers:['十','十'], mean:'人によって考えや好みがちがう' },
+  { cat:'数', text:'〔　〕転び〔　〕起き',      answers:['七','八'], mean:'何度失敗しても立ち直る' },
+  { cat:'数', text:'〔　〕か〔　〕か',          answers:['一','八'], mean:'運を天にまかせてやってみる' },
+  { cat:'数', text:'千里の道も〔　〕歩から',    answers:['一'], mean:'大きな事も小さな一歩から始まる' },
+  { cat:'数', text:'百聞は〔　〕見にしかず',    answers:['一'], mean:'百回聞くより一度見るほうがよい' },
+  { cat:'数', text:'〔　〕日千秋',              answers:['一'], mean:'とても待ち遠しい' },
+  { cat:'数', text:'〔　〕人寄れば文殊のちえ',  answers:['三'], mean:'何人かで考えればよい知恵が出る' },
+  { cat:'数', text:'〔　〕苦〔　〕苦',          answers:['四','八'], mean:'とても苦労する' },
+  { cat:'数', text:'〔　〕階から目薬',          answers:['二'], mean:'遠回りでききめがない' },
+  { cat:'数', text:'〔　〕方美人',              answers:['八'], mean:'だれにでも良く見せようとする人' },
+  { cat:'数', text:'九死に〔　〕生を得る',      answers:['一'], mean:'危ないところをやっと助かる' },
+  { cat:'数', text:'〔　〕心不乱',              answers:['一'], mean:'一つのことに心を集中する' },
 ];
 
 // ================================================================
@@ -2881,6 +2927,8 @@ function generateSpecialPdf() {
     let pool;
     if (type === 'pref') {
       pool = PREFECTURES.map(p => ({ ...p, tag: '4年・都道府県' }));
+    } else if (type === 'idiom') { // 慣用句・ことわざ
+      pool = IDIOMS.map(it => ({ ...it, tag: it.cat === '体' ? '体の一部' : '漢数字' }));
     } else { // oku（送りがな）：DATA[4]から語尾がかなの語を学期つきで集める
       pool = [];
       // 5・6年の相方漢字をひらがなにした語（愛じょう等）は送りがなではないため除外
@@ -2915,11 +2963,12 @@ function specialWriteSentence(q) {
 }
 
 function buildSpecialHtml(type, payload) {
-  const titleMap = { pref: '都道府県の漢字テスト', oku: '送りがなテスト', homophone: '同音異義語テスト' };
+  const titleMap = { pref: '都道府県の漢字テスト', oku: '送りがなテスト', homophone: '同音異義語テスト', idiom: '慣用句・ことわざテスト' };
   const instMap = {
     pref: '次の都道府県名を漢字で書きましょう。',
     oku:  '次のことばを漢字で書きましょう。送りがなも正しく書きましょう。',
     homophone: '次の読みのことばを、文に合うように正しい漢字で書きましょう。',
+    idiom: '次の〔　〕に、体の一部または漢数字を表す漢字を書きましょう。',
   };
   const title = titleMap[type];
 
@@ -2949,6 +2998,25 @@ function buildSpecialHtml(type, payload) {
 
     let an = 0;
     const ansItems = payload.flatMap(pair => pair.items.map(it => { an++; return `<span class="kc-ans-item"><b>（${an}）</b>${it.word}</span>`; })).join('');
+    answerHtml = `<div class="kc-ans-grid">${ansItems}</div>`;
+  } else if (type === 'idiom') {
+    bodyHtml = `<div class="kc-list">` + payload.map((it, i) => {
+      const q = it.text.replace(/〔　〕/g, () => '<span class="idiom-box"></span>');
+      return `
+      <div class="kc-q">
+        <div class="kc-num">（${i + 1}）</div>
+        <div class="kc-body">
+          <div class="idiom-text">${q} <span class="sp-tag">【${it.tag}】</span></div>
+          <div class="idiom-mean">意味：${it.mean}</div>
+        </div>
+      </div>`;
+    }).join('') + `</div>`;
+
+    const ansItems = payload.map((it, i) => {
+      let k = 0;
+      const filled = it.text.replace(/〔　〕/g, () => `<span class="idiom-ans">${it.answers[k++]}</span>`);
+      return `<span class="kc-ans-item"><b>（${i + 1}）</b>${filled}</span>`;
+    }).join('');
     answerHtml = `<div class="kc-ans-grid">${ansItems}</div>`;
   } else {
     bodyHtml = `<div class="kc-list">` + payload.map((q, i) => `
@@ -2996,6 +3064,14 @@ body {
 .kc-inst { font-size:11pt; font-weight:bold; margin-bottom:4mm; }
 .kc-target { font-weight:900; border-bottom:2px solid #111; padding:0 1px; }
 .sp-tag { font-size:8.5pt; color:#7a3ca0; font-weight:600; white-space:nowrap; }
+
+/* 慣用句・ことわざ */
+.idiom-text { font-size:13pt; font-weight:bold; line-height:2.0; margin-bottom:1mm; }
+.idiom-box { display:inline-block; width:11mm; height:11mm; border:1.6px solid #333; vertical-align:middle; margin:0 2px; position:relative; }
+.idiom-box::before { content:''; position:absolute; left:50%; top:0; height:100%; border-left:1px dashed #ccc; }
+.idiom-box::after { content:''; position:absolute; left:0; top:50%; width:100%; border-top:1px dashed #ccc; }
+.idiom-mean { font-size:9pt; color:#666; margin-top:0.5mm; }
+.idiom-ans { color:#7a3ca0; font-weight:bold; }
 
 .kc-list { display:flex; flex-direction:column; gap:4mm; }
 .kc-q { display:flex; gap:3mm; align-items:flex-start; }
