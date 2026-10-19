@@ -1278,16 +1278,23 @@ textarea.text-input {
     <div class="pdf-modal-title">🎯 開智対策テストを作る</div>
 
     <div style="font-size:13px;color:var(--text2);background:var(--fill1);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:20px;line-height:1.7;">
-      📌 4年生の漢字から <b>読み3問 → 書き7問</b> の10問を作ります<br>
+      📌 4年生の漢字から <b>読み：書き＝3：7</b>（過去問と同じ）で作ります<br>
       📌 過去問と同じ出題形式（短文の中で問う）です<br>
       📌 最後に<b>解答ページ</b>が付きます
     </div>
 
+    <div class="pdf-section-label">1まいの問題数</div>
+    <div class="choice-grid cols-3" id="kaichi-grp-q" style="margin-bottom:20px;">
+      <button class="choice-btn" onclick="pickKaichi('qcount',10,this)">10問<br><small>読3・書7</small></button>
+      <button class="choice-btn" onclick="pickKaichi('qcount',20,this)">20問<br><small>読6・書14</small></button>
+      <button class="choice-btn" onclick="pickKaichi('qcount',30,this)">30問<br><small>読9・書21</small></button>
+    </div>
+
     <div class="pdf-section-label">作る枚数</div>
-    <div class="choice-grid cols-3" id="kaichi-grp-count" style="margin-bottom:20px;">
-      <button class="choice-btn" onclick="pickKaichi(1,this)">1枚</button>
-      <button class="choice-btn" onclick="pickKaichi(3,this)">3枚</button>
-      <button class="choice-btn" onclick="pickKaichi(5,this)">5枚</button>
+    <div class="choice-grid cols-3" id="kaichi-grp-sheets" style="margin-bottom:20px;">
+      <button class="choice-btn" onclick="pickKaichi('sheets',1,this)">1枚</button>
+      <button class="choice-btn" onclick="pickKaichi('sheets',3,this)">3枚</button>
+      <button class="choice-btn" onclick="pickKaichi('sheets',5,this)">5枚</button>
     </div>
 
     <div style="font-size:13px;color:var(--text2);background:var(--fill1);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:16px;line-height:1.7;">
@@ -2057,7 +2064,7 @@ let canvasCSS = 0;
 let pdfSel = { grade: null, semester: null, qtype: null, count: null };
 
 // 開智対策用状態（count = 作る枚数）
-let kaichiSel = { count: null };
+let kaichiSel = { qcount: null, sheets: null };
 
 // 特別セット用状態（type = pref|oku|homophone, count = 問題数）
 let specialSel = { type: null, count: null };
@@ -2581,8 +2588,8 @@ ${qHtml}
 //  開智対策モード（4年漢字・読み3＋書き7の10問テスト）
 // ================================================================
 function openKaichiModal() {
-  kaichiSel = { count: null };
-  document.querySelectorAll('#kaichi-grp-count .choice-btn')
+  kaichiSel = { qcount: null, sheets: null };
+  document.querySelectorAll('#kaichi-grp-q .choice-btn,#kaichi-grp-sheets .choice-btn')
           .forEach(b => b.classList.remove('selected'));
   document.getElementById('btn-kaichi-gen').disabled = true;
   document.getElementById('kaichi-overlay').classList.add('open');
@@ -2596,22 +2603,25 @@ function kaichiOverlayClick(e) {
   if (e.target === document.getElementById('kaichi-overlay')) closeKaichiModal();
 }
 
-function pickKaichi(val, btn) {
-  kaichiSel.count = val;
-  document.querySelectorAll('#kaichi-grp-count .choice-btn')
+function pickKaichi(kind, val, btn) {
+  kaichiSel[kind] = val;
+  const grp = kind === 'qcount' ? 'kaichi-grp-q' : 'kaichi-grp-sheets';
+  document.querySelectorAll('#' + grp + ' .choice-btn')
           .forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
-  document.getElementById('btn-kaichi-gen').disabled = !kaichiSel.count;
+  document.getElementById('btn-kaichi-gen').disabled =
+    !(kaichiSel.qcount && kaichiSel.sheets);
 }
 
-// 1枚分（10問）を抽出する。読み3問→書き7問の順。
+// 1枚分（qcount問）を抽出する。読み：書き＝3：7で、読み→書きの順に並べる。
 // 1字2〜3語あるため、同じ漢字を含む語が1枚に重複しないよう選ぶ（pool はシャッフル済み）
-function buildKaichiSheet(pool) {
+function buildKaichiSheet(pool, qcount) {
+  const readCount = Math.round(qcount * 0.3);   // 読みの数（3割）
   const picks = [];
   const usedKanji = new Set();
   const isKanji = c => /[一-鿿]/.test(c);
   // まず漢字が重複しない語を優先して選ぶ
-  for (let i = 0; i < pool.length && picks.length < 10; i++) {
+  for (let i = 0; i < pool.length && picks.length < qcount; i++) {
     const kanji = [...pool[i].word].filter(isKanji);
     if (kanji.some(c => usedKanji.has(c))) continue;
     picks.push(pool[i]);
@@ -2619,17 +2629,18 @@ function buildKaichiSheet(pool) {
     pool.splice(i, 1);
     i--;
   }
-  // 重複回避で10問に満たない場合は残りから補充
-  while (picks.length < 10 && pool.length) picks.push(pool.shift());
+  // 重複回避で足りない場合は残りから補充
+  while (picks.length < qcount && pool.length) picks.push(pool.shift());
   return picks.map((q, i) => ({
     ...q,
-    qtype: i < 3 ? 'reading' : 'writing',    // ①〜③読み、④〜⑩書き
+    qtype: i < readCount ? 'reading' : 'writing',   // 前半＝読み、後半＝書き
   }));
 }
 
 function generateKaichiPdf() {
-  const sheetCount = kaichiSel.count;
-  const need = sheetCount * 10;
+  const sheetCount = kaichiSel.sheets;
+  const qcount = kaichiSel.qcount;
+  const need = sheetCount * qcount;
   // 4年生 全学期プールをシャッフル。足りなければ繰り返して補充する
   let pool = shuffle([...buildPool(4, 0)]);
   while (pool.length < need) {
@@ -2637,7 +2648,7 @@ function generateKaichiPdf() {
   }
   const sheets = [];
   for (let s = 0; s < sheetCount; s++) {
-    sheets.push(buildKaichiSheet(pool));
+    sheets.push(buildKaichiSheet(pool, qcount));
   }
   const html = buildKaichiHtml(sheets);
   const w = window.open('', '_blank');
@@ -2698,7 +2709,7 @@ function buildKaichiHtml(sheets) {
         <div class="kc-meta">
           <div class="kc-field" style="flex:2"><span>名前</span><span class="kc-ul"></span></div>
           <div class="kc-field" style="flex:1.2"><span>日付</span><span class="kc-ul"></span><span>月</span><span class="kc-ul" style="min-width:26px"></span><span>日</span></div>
-          <div class="kc-field kc-score"><span>点数</span><span class="kc-ul"></span><span>／10</span></div>
+          <div class="kc-field kc-score"><span>点数</span><span class="kc-ul"></span><span>／${qs.length}</span></div>
         </div>
       </div>
 
