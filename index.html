@@ -258,6 +258,21 @@ body {
 }
 .btn-sub:active { background: var(--fill2); transform: scale(0.98); }
 
+/* ── ドリルハブへのリンク ──────────── */
+.hub-link {
+  display: block;
+  text-align: center;
+  margin-top: 18px;
+  padding: 10px;
+  color: var(--text2);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: var(--r-sm);
+}
+.hub-link:hover { text-decoration: underline; }
+.hub-link:active { background: var(--fill1); }
+
 /* ── 開智対策ボタン ──────────── */
 .btn-kaichi {
   width: 100%;
@@ -1009,6 +1024,7 @@ textarea.text-input {
     <button class="btn-sub" onclick="openSpecialModal()" style="margin-top:12px;">📚 特別セット（都道府県・送りがな・同音異義語）</button>
     <button class="btn-sub" onclick="openPdfModal()" style="margin-top:10px;">📄 プリントテストを作る</button>
     <button class="btn-sub" onclick="openCustomListScreen()" style="margin-top:10px;">📋 カスタムリスト</button>
+    <a class="hub-link" href="https://wg-dev-env.github.io/drill-hub/" target="_blank" rel="noopener">🏠 ドリルハブ（ほかのドリル一覧）へ</a>
   </div>
 
   <!-- ========== STEP 2: 学期選択 ========== -->
