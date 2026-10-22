@@ -1281,8 +1281,9 @@ textarea.text-input {
     <div class="pdf-modal-title">🎯 開智対策テストを作る</div>
 
     <div style="font-size:13px;color:var(--text2);background:var(--fill1);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:20px;line-height:1.7;">
-      📌 4年生の漢字から <b>読み：書き＝3：7</b>（過去問と同じ）で作ります<br>
-      📌 過去問と同じ出題形式（短文の中で問う）です<br>
+      📌 <b>大問一（漢字）</b>…4年生の漢字から <b>読み：書き＝3：7</b>（過去問と同じ）<br>
+      📌 <b>大問二（慣用句・ことわざ）</b>…体の一部・漢数字を入れる 5問 を自動で付けます<br>
+      📌 過去問と同じ出題形式（短文・空欄の中で問う）です<br>
       📌 最後に<b>解答ページ</b>が付きます
     </div>
 
@@ -2659,9 +2660,13 @@ function pickKaichi(kind, val, btn) {
     !(kaichiSel.qcount && kaichiSel.sheets);
 }
 
-// 1枚分（qcount問）を抽出する。読み：書き＝3：7で、読み→書きの順に並べる。
-// 1字2〜3語あるため、同じ漢字を含む語が1枚に重複しないよう選ぶ（pool はシャッフル済み）
-function buildKaichiSheet(pool, qcount) {
+// 開智 大問二（慣用句・ことわざ）の1枚あたり出題数（過去問に合わせて5問）
+const KAICHI_IDIOMS_PER_SHEET = 5;
+
+// 1枚分を抽出する。大問一＝漢字（読み：書き＝3：7、読み→書きの順）、大問二＝慣用句・ことわざ。
+// 1字2〜3語あるため、同じ漢字を含む語が1枚に重複しないよう選ぶ（pool はシャッフル済み）。
+// 慣用句は idiomPool（シャッフル済み）から重複なく取り出す。
+function buildKaichiSheet(pool, qcount, idiomPool) {
   const readCount = Math.round(qcount * 0.3);   // 読みの数（3割）
   const picks = [];
   const usedKanji = new Set();
@@ -2677,10 +2682,17 @@ function buildKaichiSheet(pool, qcount) {
   }
   // 重複回避で足りない場合は残りから補充
   while (picks.length < qcount && pool.length) picks.push(pool.shift());
-  return picks.map((q, i) => ({
+  const kanji = picks.map((q, i) => ({
     ...q,
     qtype: i < readCount ? 'reading' : 'writing',   // 前半＝読み、後半＝書き
   }));
+  // 大問二：慣用句・ことわざを idiomPool から取り出す
+  const idioms = [];
+  while (idioms.length < KAICHI_IDIOMS_PER_SHEET && idiomPool.length) {
+    const it = idiomPool.shift();
+    idioms.push({ ...it, tag: it.cat === '体' ? '体の一部' : '漢数字' });
+  }
+  return { kanji, idioms };
 }
 
 function generateKaichiPdf() {
@@ -2692,9 +2704,15 @@ function generateKaichiPdf() {
   while (pool.length < need) {
     pool = pool.concat(shuffle([...buildPool(4, 0)]));
   }
+  // 大問二：慣用句・ことわざプール。枚数ぶん足りなければ繰り返して補充する
+  const idiomNeed = sheetCount * KAICHI_IDIOMS_PER_SHEET;
+  let idiomPool = shuffle([...IDIOMS]);
+  while (idiomPool.length < idiomNeed) {
+    idiomPool = idiomPool.concat(shuffle([...IDIOMS]));
+  }
   const sheets = [];
   for (let s = 0; s < sheetCount; s++) {
-    sheets.push(buildKaichiSheet(pool, qcount));
+    sheets.push(buildKaichiSheet(pool, qcount, idiomPool));
   }
   const html = buildKaichiHtml(sheets);
   const w = window.open('', '_blank');
@@ -2721,9 +2739,10 @@ function kaichiSentence(q) {
 
 function buildKaichiHtml(sheets) {
   // 問題ページ（1枚＝1ページ）
-  const sheetPages = sheets.map((qs, si) => {
-    const reads = qs.filter(q => q.qtype === 'reading');
-    const writes = qs.filter(q => q.qtype === 'writing');
+  const sheetPages = sheets.map((sheet, si) => {
+    const reads = sheet.kanji.filter(q => q.qtype === 'reading');
+    const writes = sheet.kanji.filter(q => q.qtype === 'writing');
+    const total = sheet.kanji.length + sheet.idioms.length;
     let n = 0;
     const readHtml = reads.map(q => {
       n++;
@@ -2747,36 +2766,60 @@ function buildKaichiHtml(sheets) {
           </div>
         </div>`;
     }).join('');
+    // 大問二：慣用句・ことわざ（〔　〕を空欄マスにする）
+    const idiomHtml = sheet.idioms.map((it, i) => {
+      const q = it.text.replace(/〔　〕/g, () => '<span class="idiom-box"></span>');
+      return `
+        <div class="kc-q">
+          <div class="kc-num">（${i + 1}）</div>
+          <div class="kc-body">
+            <div class="idiom-text">${q} <span class="sp-tag">【${it.tag}】</span></div>
+            <div class="idiom-mean">意味：${it.mean}</div>
+          </div>
+        </div>`;
+    }).join('');
 
     return `
     <div class="kc-sheet">
       <div class="kc-header">
-        <div class="kc-title">開智対策　漢字テスト${sheets.length > 1 ? `（${si + 1}枚目）` : ''}</div>
+        <div class="kc-title">開智対策　国語テスト${sheets.length > 1 ? `（${si + 1}枚目）` : ''}</div>
         <div class="kc-meta">
           <div class="kc-field" style="flex:2"><span>名前</span><span class="kc-ul"></span></div>
           <div class="kc-field" style="flex:1.2"><span>日付</span><span class="kc-ul"></span><span>月</span><span class="kc-ul" style="min-width:26px"></span><span>日</span></div>
-          <div class="kc-field kc-score"><span>点数</span><span class="kc-ul"></span><span>／${qs.length}</span></div>
+          <div class="kc-field kc-score"><span>点数</span><span class="kc-ul"></span><span>／${total}</span></div>
         </div>
       </div>
 
-      <div class="kc-sec-label">一、次の<span class="kc-target">太い字</span>の漢字の読みをひらがなで書きましょう。</div>
+      <div class="kc-daimon">一　漢字</div>
+      <div class="kc-sec-label">⑴ 次の<span class="kc-target">太い字</span>の漢字の読みをひらがなで書きましょう。</div>
       <div class="kc-list">${readHtml}</div>
-
-      <div class="kc-sec-label" style="margin-top:7mm;">二、次の<span class="kc-target">太い字</span>のことばを漢字で書きましょう。</div>
+      <div class="kc-sec-label" style="margin-top:5mm;">⑵ 次の<span class="kc-target">太い字</span>のことばを漢字で書きましょう。</div>
       <div class="kc-list">${writeHtml}</div>
+
+      <div class="kc-daimon" style="margin-top:8mm;">二　慣用句・ことわざ</div>
+      <div class="kc-sec-label">次の〔　〕に、体の一部または漢数字を表す漢字を書きましょう。</div>
+      <div class="kc-list">${idiomHtml}</div>
     </div>`;
   }).join('');
 
   // 解答ページ
-  const answerBlocks = sheets.map((qs, si) => {
-    const items = qs.map((q, i) => {
+  const answerBlocks = sheets.map((sheet, si) => {
+    const kanjiItems = sheet.kanji.map((q, i) => {
       const ans = q.qtype === 'reading' ? q.reading : q.word;
       return `<span class="kc-ans-item"><b>（${i + 1}）</b>${ans}</span>`;
+    }).join('');
+    const idiomItems = sheet.idioms.map((it, i) => {
+      let k = 0;
+      const filled = it.text.replace(/〔　〕/g, () => `<span class="idiom-ans">${it.answers[k++]}</span>`);
+      return `<span class="kc-ans-item"><b>（${i + 1}）</b>${filled}</span>`;
     }).join('');
     return `
       <div class="kc-ans-sheet">
         <div class="kc-ans-head">${sheets.length > 1 ? `${si + 1}枚目` : '解答'}</div>
-        <div class="kc-ans-grid">${items}</div>
+        <div class="kc-ans-sub">一　漢字</div>
+        <div class="kc-ans-grid">${kanjiItems}</div>
+        <div class="kc-ans-sub">二　慣用句・ことわざ</div>
+        <div class="kc-ans-grid">${idiomItems}</div>
       </div>`;
   }).join('');
 
@@ -2784,7 +2827,7 @@ function buildKaichiHtml(sheets) {
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>開智対策 漢字テスト（${sheets.length}枚）</title>
+<title>開智対策 国語テスト（${sheets.length}枚）</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 @page { size: A4 portrait; margin: 15mm; }
@@ -2816,8 +2859,18 @@ body {
 .kc-ul { border-bottom:1.5px solid #333; min-width:28mm; height:5mm; flex:1; }
 .kc-field.kc-score .kc-ul { min-width:14mm; flex:none; }
 
+.kc-daimon { font-size:13pt; font-weight:bold; background:#fff2e0; border-left:5px solid #FF9500; padding:4px 10px; margin-bottom:4mm; letter-spacing:2px; }
 .kc-sec-label { font-size:11pt; font-weight:bold; margin-bottom:4mm; }
 .kc-target { font-weight:900; border-bottom:2px solid #111; padding:0 1px; }
+.sp-tag { font-size:8.5pt; color:#c05a00; font-weight:600; white-space:nowrap; }
+
+/* 大問二 慣用句・ことわざ */
+.idiom-text { font-size:13pt; font-weight:bold; line-height:2.0; margin-bottom:1mm; }
+.idiom-box { display:inline-block; width:11mm; height:11mm; border:1.6px solid #333; vertical-align:middle; margin:0 2px; position:relative; }
+.idiom-box::before { content:''; position:absolute; left:50%; top:0; height:100%; border-left:1px dashed #ccc; }
+.idiom-box::after { content:''; position:absolute; left:0; top:50%; width:100%; border-top:1px dashed #ccc; }
+.idiom-mean { font-size:9pt; color:#666; margin-top:0.5mm; }
+.idiom-ans { color:#c05a00; font-weight:bold; }
 
 .kc-list { display:flex; flex-direction:column; gap:3.5mm; }
 .kc-q { display:flex; gap:3mm; align-items:flex-start; }
@@ -2835,7 +2888,8 @@ body {
 .kc-ans-title { font-size:15pt; font-weight:bold; text-align:center; margin-bottom:8mm; letter-spacing:2px; border-bottom:2px solid #333; padding-bottom:6px; }
 .kc-ans-sheet { margin-bottom:7mm; }
 .kc-ans-head { font-size:12pt; font-weight:bold; background:#fff2e0; border-left:5px solid #FF9500; padding:4px 10px; margin-bottom:4mm; }
-.kc-ans-grid { display:grid; grid-template-columns:1fr 1fr; gap:3mm 8mm; }
+.kc-ans-sub { font-size:11pt; font-weight:bold; margin:3mm 0 2mm; color:#c05a00; }
+.kc-ans-grid { display:grid; grid-template-columns:1fr 1fr; gap:3mm 8mm; margin-bottom:3mm; }
 .kc-ans-item { font-size:12pt; }
 .kc-ans-item b { color:#c05a00; margin-right:3px; }
 
