@@ -1266,7 +1266,7 @@ textarea.text-input {
         🔀 同音異義語<br><small>機械／機会 など 使い分け（書き）</small>
       </button>
       <button class="choice-btn" onclick="pickSpecialType('idiom',this)">
-        💬 慣用句・ことわざ<br><small>体の一部・漢数字を入れる（開智 大問二）</small>
+        💬 慣用句・ことわざ<br><small>体の一部／漢数字／生き物／自然／色を入れる</small>
       </button>
     </div>
 
@@ -2105,7 +2105,58 @@ const IDIOMS = [
   { cat:'数', text:'〔　〕方美人',              answers:['八'], mean:'だれにでも良く見せようとする人' },
   { cat:'数', text:'九死に〔　〕生を得る',      answers:['一'], mean:'危ないところをやっと助かる' },
   { cat:'数', text:'〔　〕心不乱',              answers:['一'], mean:'一つのことに心を集中する' },
+  // 生き物（動物・虫・魚）
+  { cat:'生', text:'〔　〕の耳にねんぶつ',        answers:['馬'], mean:'何度言っても聞き入れない' },
+  { cat:'生', text:'〔　〕も歩けばぼうに当たる',  answers:['犬'], mean:'出歩くと思いがけないことに出会う' },
+  { cat:'生', text:'〔　〕の歩み',                answers:['牛'], mean:'進み方がとてもおそい' },
+  { cat:'生', text:'〔　〕が合う',                answers:['馬'], mean:'気がよく合う' },
+  { cat:'生', text:'〔　〕の知らせ',              answers:['虫'], mean:'よくないことが起こりそうな気がする' },
+  { cat:'生', text:'〔　〕はだが立つ',            answers:['鳥'], mean:'おそろしくてぞっとする' },
+  { cat:'生', text:'水を得た〔　〕のよう',        answers:['魚'], mean:'生き生きと力をはっきする' },
+  { cat:'生', text:'かい〔　〕に手をかまれる',    answers:['犬'], mean:'かわいがっていた者に裏切られる' },
+  { cat:'生', text:'負け〔　〕の遠ぼえ',          answers:['犬'], mean:'弱い者がかげで強がる' },
+  { cat:'生', text:'〔　〕のいどころが悪い',      answers:['虫'], mean:'きげんが悪い' },
+  { cat:'生', text:'立つ〔　〕あとをにごさず',    answers:['鳥'], mean:'去るときはきれいに始末する' },
+  { cat:'生', text:'〔　〕が好かない',            answers:['虫'], mean:'なんとなく気に入らない' },
+  // 自然・植物
+  { cat:'然', text:'〔　〕に油をそそぐ',          answers:['火'], mean:'いきおいをさらに強くする' },
+  { cat:'然', text:'〔　〕のあわ',                answers:['水'], mean:'努力がむだになる' },
+  { cat:'然', text:'〔　〕に流す',                answers:['水'], mean:'なかったことにする' },
+  { cat:'然', text:'〔　〕を打ったよう',          answers:['水'], mean:'大勢が急に静まりかえる' },
+  { cat:'然', text:'〔　〕と油',                  answers:['水'], mean:'たがいに性質が合わない' },
+  { cat:'然', text:'〔　〕をさす',                answers:['水'], mean:'うまくいっていることのじゃまをする' },
+  { cat:'然', text:'〔　〕を見て森を見ず',        answers:['木'], mean:'細かい所にとらわれて全体を見ない' },
+  { cat:'然', text:'〔　〕に竹をつぐ',            answers:['木'], mean:'つり合わずちぐはぐである' },
+  { cat:'然', text:'〔　〕をわったよう',          answers:['竹'], mean:'さっぱりとした性格' },
+  { cat:'然', text:'〔　〕よりだんご',            answers:['花'], mean:'見た目より中身のある方がよい' },
+  { cat:'然', text:'〔　〕を持たせる',            answers:['花'], mean:'相手にめいよをゆずる' },
+  { cat:'然', text:'〔　〕を売る',                answers:['油'], mean:'仕事をなまけてむだ話をする' },
+  { cat:'然', text:'〔　〕橋をたたいてわたる',    answers:['石'], mean:'用心のうえに用心を重ねる' },
+  { cat:'然', text:'〔　〕の上にも三年',          answers:['石'], mean:'しんぼう強く続ければ成功する' },
+  { cat:'然', text:'〔　〕の便り',                answers:['風'], mean:'どこからともなく伝わるうわさ' },
+  { cat:'然', text:'〔　〕向きが変わる',          answers:['風'], mean:'なりゆきや形勢が変わる' },
+  { cat:'然', text:'〔　〕ふって地かたまる',      answers:['雨'], mean:'もめごとのあとはかえってうまくいく' },
+  { cat:'然', text:'〔　〕後のたけのこ',          answers:['雨'], mean:'同じようなものが次々と現れ出る' },
+  { cat:'然', text:'ちりも積もれば〔　〕となる',  answers:['山'], mean:'小さなことも積み重なれば大きくなる' },
+  { cat:'然', text:'〔　〕あれば谷あり',          answers:['山'], mean:'よい時もあれば悪い時もある' },
+  // 色
+  { cat:'色', text:'〔　〕の他人',                answers:['赤'], mean:'まったく関係のない人' },
+  { cat:'色', text:'真っ〔　〕なうそ',            answers:['赤'], mean:'まったくのうそ' },
+  { cat:'色', text:'〔　〕羽の矢が立つ',          answers:['白'], mean:'多くの中から選び出される' },
+  { cat:'色', text:'〔　〕紙にもどす',            answers:['白'], mean:'すべてはじめの状態にもどす' },
+  { cat:'色', text:'〔　〕い目で見る',            answers:['白'], mean:'冷たい目で見る' },
+  { cat:'色', text:'目を〔　〕黒させる',          answers:['白'], mean:'とてもおどろいてあわてる' },
+  { cat:'色', text:'〔　〕菜に塩',                answers:['青'], mean:'元気がなくしおれたようす' },
+  { cat:'色', text:'顔が〔　〕くなる',            answers:['青'], mean:'おどろきや心配で顔色を失う' },
+  { cat:'色', text:'はらが〔　〕い',              answers:['黒'], mean:'心の中に悪いたくらみがある' },
+  { cat:'色', text:'〔　〕星がつく',              answers:['黒'], mean:'勝負に負ける' },
 ];
+
+// カテゴリ表示名（プリントの【　】タグに使う）
+const IDIOM_TAG = { '体':'体の一部', '数':'漢数字', '生':'生き物', '然':'自然・植物', '色':'色' };
+
+// 開智 大問二は過去問の出題傾向（体の一部・漢数字）に合わせたプールを使う
+const KAICHI_IDIOM_CATS = ['体', '数'];
 
 // ================================================================
 //  回データ（学年・学期・回 → 対象漢字リスト）
@@ -2706,7 +2757,7 @@ function buildKaichiSheet(pool, qcount, idiomPool) {
   const idioms = [];
   while (idioms.length < KAICHI_IDIOMS_PER_SHEET && idiomPool.length) {
     const it = idiomPool.shift();
-    idioms.push({ ...it, tag: it.cat === '体' ? '体の一部' : '漢数字' });
+    idioms.push({ ...it, tag: IDIOM_TAG[it.cat] });
   }
   return { kanji, idioms };
 }
@@ -2722,9 +2773,10 @@ function generateKaichiPdf() {
   }
   // 大問二：慣用句・ことわざプール。枚数ぶん足りなければ繰り返して補充する
   const idiomNeed = sheetCount * KAICHI_IDIOMS_PER_SHEET;
-  let idiomPool = shuffle([...IDIOMS]);
+  const kaichiIdioms = IDIOMS.filter(it => KAICHI_IDIOM_CATS.includes(it.cat));
+  let idiomPool = shuffle([...kaichiIdioms]);
   while (idiomPool.length < idiomNeed) {
-    idiomPool = idiomPool.concat(shuffle([...IDIOMS]));
+    idiomPool = idiomPool.concat(shuffle([...kaichiIdioms]));
   }
   const sheets = [];
   for (let s = 0; s < sheetCount; s++) {
@@ -2998,7 +3050,7 @@ function generateSpecialPdf() {
     if (type === 'pref') {
       pool = PREFECTURES.map(p => ({ ...p, tag: '4年・都道府県' }));
     } else if (type === 'idiom') { // 慣用句・ことわざ
-      pool = IDIOMS.map(it => ({ ...it, tag: it.cat === '体' ? '体の一部' : '漢数字' }));
+      pool = IDIOMS.map(it => ({ ...it, tag: IDIOM_TAG[it.cat] }));
     } else { // oku（送りがな）：DATA[4]から語尾がかなの語を学期つきで集める
       pool = [];
       // 5・6年の相方漢字をひらがなにした語（愛じょう等）は送りがなではないため除外
@@ -3038,7 +3090,7 @@ function buildSpecialHtml(type, payload) {
     pref: '次の都道府県名を漢字で書きましょう。',
     oku:  '次のことばを漢字で書きましょう。送りがなも正しく書きましょう。',
     homophone: '次の読みのことばを、文に合うように正しい漢字で書きましょう。',
-    idiom: '次の〔　〕に、体の一部または漢数字を表す漢字を書きましょう。',
+    idiom: '次の〔　〕に、体の一部・漢数字・生き物・自然・色などを表す漢字を書きましょう。',
   };
   const title = titleMap[type];
 
