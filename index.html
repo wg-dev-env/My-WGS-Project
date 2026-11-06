@@ -1298,6 +1298,7 @@ textarea.text-input {
 
     <div style="font-size:13px;color:var(--text2);background:var(--fill1);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:20px;line-height:1.7;">
       📌 <b>大問一（漢字）</b>…4年生の漢字から <b>読み：書き＝3：7</b>（過去問と同じ）<br>
+      📌 読みの約3分の1は<b>入試頻出の読み</b>（熟字訓・別の読み・音の変化）から出します<br>
       📌 <b>大問二（慣用句・ことわざ）</b>…体の一部・漢数字を入れる 5問 を自動で付けます<br>
       📌 過去問と同じ出題形式（短文・空欄の中で問う）です<br>
       📌 最後に<b>解答ページ</b>が付きます
@@ -2152,6 +2153,83 @@ const IDIOMS = [
   { cat:'色', text:'〔　〕星がつく',              answers:['黒'], mean:'勝負に負ける' },
 ];
 
+// ── 読みのバリエーション（開智 大問一⑴：中学入試で頻出の読み）──
+// 4年生の配当漢字だけでは出ない読みを補う読み専用データ。
+// cat: 訓=熟字訓・特別な読み / 複=同じ漢字の別の読み / 音=音が変わる熟語（促音・連濁）
+const READING_EXTRA = [
+  // 熟字訓・特別な読み
+  { cat:'訓', word:'八百屋',   reading:'やおや',     sentence:'八百屋で野菜を買う。' },
+  { cat:'訓', word:'迷子',     reading:'まいご',     sentence:'妹が迷子になってしまった。' },
+  { cat:'訓', word:'明日',     reading:'あす',       sentence:'明日は遠足の日だ。' },
+  { cat:'訓', word:'今朝',     reading:'けさ',       sentence:'今朝は早く起きた。' },
+  { cat:'訓', word:'今年',     reading:'ことし',     sentence:'今年の夏はとても暑い。' },
+  { cat:'訓', word:'一日',     reading:'ついたち',   sentence:'七月一日に生まれた。' },
+  { cat:'訓', word:'二十日',   reading:'はつか',     sentence:'来月の二十日に会おう。' },
+  { cat:'訓', word:'十日',     reading:'とおか',     sentence:'十日もかかる仕事だ。' },
+  { cat:'訓', word:'上手',     reading:'じょうず',   sentence:'兄は絵が上手だ。' },
+  { cat:'訓', word:'下手',     reading:'へた',       sentence:'歌は下手だが大きな声で歌う。' },
+  { cat:'訓', word:'大人',     reading:'おとな',     sentence:'大人の意見を聞く。' },
+  { cat:'訓', word:'大勢',     reading:'おおぜい',   sentence:'公園に大勢の人が集まる。' },
+  { cat:'訓', word:'一人',     reading:'ひとり',     sentence:'一人で留守番をする。' },
+  { cat:'訓', word:'二人',     reading:'ふたり',     sentence:'二人で荷物を運ぶ。' },
+  { cat:'訓', word:'眼鏡',     reading:'めがね',     sentence:'眼鏡をかけて本を読む。' },
+  { cat:'訓', word:'時計',     reading:'とけい',     sentence:'時計のはりが十二時を指す。' },
+  { cat:'訓', word:'七夕',     reading:'たなばた',   sentence:'七夕にたんざくをかざる。' },
+  { cat:'訓', word:'清水',     reading:'しみず',     sentence:'山の清水を飲む。' },
+  { cat:'訓', word:'部屋',     reading:'へや',       sentence:'自分の部屋をそうじする。' },
+  { cat:'訓', word:'川原',     reading:'かわら',     sentence:'川原で石を拾う。' },
+  { cat:'訓', word:'真っ赤',   reading:'まっか',     sentence:'夕日で空が真っ赤になる。' },
+  { cat:'訓', word:'真っ青',   reading:'まっさお',   sentence:'おどろいて真っ青な顔になる。' },
+  { cat:'訓', word:'真面目',   reading:'まじめ',     sentence:'真面目に話を聞く。' },
+  { cat:'訓', word:'手伝う',   reading:'てつだう',   sentence:'母の仕事を手伝う。' },
+  { cat:'訓', word:'心地',     reading:'ここち',     sentence:'春の風が心地よい。' },
+  { cat:'訓', word:'最寄り',   reading:'もより',     sentence:'最寄りの駅まで歩く。' },
+  { cat:'訓', word:'吹雪',     reading:'ふぶき',     sentence:'山は激しい吹雪になった。' },
+  { cat:'訓', word:'紅葉',     reading:'もみじ',     sentence:'山の紅葉が美しい。' },
+  // 同じ漢字の別の読み
+  { cat:'複', word:'生物',     reading:'せいぶつ',   sentence:'池の生物をかんさつする。' },
+  { cat:'複', word:'一生',     reading:'いっしょう', sentence:'一生わすれられない思い出だ。' },
+  { cat:'複', word:'生える',   reading:'はえる',     sentence:'庭に草が生える。' },
+  { cat:'複', word:'下校',     reading:'げこう',     sentence:'下校の時こくを守る。' },
+  { cat:'複', word:'川下',     reading:'かわしも',   sentence:'川下へ船が流れていく。' },
+  { cat:'複', word:'上着',     reading:'うわぎ',     sentence:'上着をぬいでかける。' },
+  { cat:'複', word:'上る',     reading:'のぼる',     sentence:'長い階段を上る。' },
+  { cat:'複', word:'行列',     reading:'ぎょうれつ', sentence:'行列にならんで待つ。' },
+  { cat:'複', word:'行う',     reading:'おこなう',   sentence:'体育館で式を行う。' },
+  { cat:'複', word:'空席',     reading:'くうせき',   sentence:'電車に空席が目立つ。' },
+  { cat:'複', word:'空',       reading:'から',       sentence:'バケツが空になる。' },
+  { cat:'複', word:'人気',     reading:'にんき',     sentence:'この店は人気がある。' },
+  { cat:'複', word:'日直',     reading:'にっちょく', sentence:'今日は日直の番だ。' },
+  { cat:'複', word:'元日',     reading:'がんじつ',   sentence:'元日に神社へ行く。' },
+  { cat:'複', word:'重ねる',   reading:'かさねる',   sentence:'同じ皿を重ねる。' },
+  { cat:'複', word:'重大',     reading:'じゅうだい', sentence:'重大な発表がある。' },
+  { cat:'複', word:'細かい',   reading:'こまかい',   sentence:'細かい字でメモを書く。' },
+  { cat:'複', word:'明ける',   reading:'あける',     sentence:'長い夜が明ける。' },
+  { cat:'複', word:'間近',     reading:'まぢか',     sentence:'試合が間近にせまる。' },
+  { cat:'複', word:'角',       reading:'つの',       sentence:'牛の角は固い。' },
+  { cat:'複', word:'市場',     reading:'いちば',     sentence:'朝の市場はにぎやかだ。' },
+  { cat:'複', word:'音色',     reading:'ねいろ',     sentence:'笛の音色が美しい。' },
+  { cat:'複', word:'草原',     reading:'そうげん',   sentence:'広い草原を馬が走る。' },
+  { cat:'複', word:'風車',     reading:'かざぐるま', sentence:'風車が風に回る。' },
+  // 音が変わる熟語（促音・連濁）
+  { cat:'音', word:'三日',     reading:'みっか',     sentence:'かぜで三日も休んだ。' },
+  { cat:'音', word:'六日',     reading:'むいか',     sentence:'六日の朝に出発する。' },
+  { cat:'音', word:'八日',     reading:'ようか',     sentence:'八日に発表会がある。' },
+  { cat:'音', word:'一本',     reading:'いっぽん',   sentence:'えん筆を一本貸す。' },
+  { cat:'音', word:'三本',     reading:'さんぼん',   sentence:'花を三本かざる。' },
+  { cat:'音', word:'八百',     reading:'はっぴゃく', sentence:'会場に八百人が集まる。' },
+  { cat:'音', word:'一回',     reading:'いっかい',   sentence:'もう一回だけ試す。' },
+  { cat:'音', word:'神社',     reading:'じんじゃ',   sentence:'近くの神社にお参りする。' },
+  { cat:'音', word:'雨具',     reading:'あまぐ',     sentence:'雨具を持って出かける。' },
+  { cat:'音', word:'春雨',     reading:'はるさめ',   sentence:'春雨のスープを飲む。' },
+  { cat:'音', word:'日本',     reading:'にほん',     sentence:'日本の文化を学ぶ。' },
+  { cat:'音', word:'工場',     reading:'こうじょう', sentence:'自動車の工場を見学する。' },
+  { cat:'音', word:'相手',     reading:'あいて',     sentence:'相手の話をよく聞く。' },
+  { cat:'音', word:'大豆',     reading:'だいず',     sentence:'大豆からとうふを作る。' },
+  { cat:'音', word:'出発',     reading:'しゅっぱつ', sentence:'朝早く出発する。' },
+  { cat:'音', word:'発表',     reading:'はっぴょう', sentence:'調べたことを発表する。' },
+];
+
 // カテゴリ表示名（プリントの【　】タグに使う）
 const IDIOM_TAG = { '体':'体の一部', '数':'漢数字', '生':'生き物', '然':'自然・植物', '色':'色' };
 
@@ -2727,19 +2805,22 @@ function pickKaichi(kind, val, btn) {
     !(kaichiSel.qcount && kaichiSel.sheets);
 }
 
+// src をシャッフルした配列を返す。need 語に足りなければシャッフルを繰り返して補充する
+function refill(src, need) {
+  let out = shuffle([...src]);
+  while (out.length < need) out = out.concat(shuffle([...src]));
+  return out;
+}
+
 // 開智 大問二（慣用句・ことわざ）の1枚あたり出題数（過去問に合わせて5問）
 const KAICHI_IDIOMS_PER_SHEET = 5;
 
-// 1枚分を抽出する。大問一＝漢字（読み：書き＝3：7、読み→書きの順）、大問二＝慣用句・ことわざ。
-// 1字2〜3語あるため、同じ漢字を含む語が1枚に重複しないよう選ぶ（pool はシャッフル済み）。
-// 慣用句は idiomPool（シャッフル済み）から重複なく取り出す。
-function buildKaichiSheet(pool, qcount, idiomPool) {
-  const readCount = Math.round(qcount * 0.3);   // 読みの数（3割）
-  const picks = [];
-  const usedKanji = new Set();
+// pool から n 語取り出す。同じ漢字を含む語が1枚に重複しないよう優先して選ぶ（pool はシャッフル済み）。
+// 取り出した語は pool から取り除くので、同じプールを次の1枚に使い回せる。
+function takeKaichiWords(pool, n, usedKanji) {
   const isKanji = c => /[一-鿿]/.test(c);
-  // まず漢字が重複しない語を優先して選ぶ
-  for (let i = 0; i < pool.length && picks.length < qcount; i++) {
+  const picks = [];
+  for (let i = 0; i < pool.length && picks.length < n; i++) {
     const kanji = [...pool[i].word].filter(isKanji);
     if (kanji.some(c => usedKanji.has(c))) continue;
     picks.push(pool[i]);
@@ -2748,11 +2829,24 @@ function buildKaichiSheet(pool, qcount, idiomPool) {
     i--;
   }
   // 重複回避で足りない場合は残りから補充
-  while (picks.length < qcount && pool.length) picks.push(pool.shift());
-  const kanji = picks.map((q, i) => ({
-    ...q,
-    qtype: i < readCount ? 'reading' : 'writing',   // 前半＝読み、後半＝書き
-  }));
+  while (picks.length < n && pool.length) picks.push(pool.shift());
+  return picks;
+}
+
+// 1枚分を抽出する。大問一＝漢字（読み：書き＝3：7、読み→書きの順）、大問二＝慣用句・ことわざ。
+// 読みは約1/3を READING_EXTRA（入試頻出の読み）から、残りを4年生の漢字から出す。
+// pools = { read, readExtra, write, idiom }（いずれもシャッフル済み）
+function buildKaichiSheet(pools, qcount) {
+  const readCount  = Math.round(qcount * 0.3);                            // 読みの数（3割）
+  const extraCount = Math.min(readCount, Math.max(1, Math.round(readCount / 3)));
+  const usedKanji  = new Set();
+  const extras = takeKaichiWords(pools.readExtra, extraCount, usedKanji);
+  const bases  = takeKaichiWords(pools.read, readCount - extras.length, usedKanji);
+  const reads  = shuffle([...extras, ...bases]).map(q => ({ ...q, qtype: 'reading' }));
+  const writes = takeKaichiWords(pools.write, qcount - readCount, usedKanji)
+                   .map(q => ({ ...q, qtype: 'writing' }));
+  const kanji = [...reads, ...writes];   // 前半＝読み、後半＝書き
+  const idiomPool = pools.idiom;
   // 大問二：慣用句・ことわざを idiomPool から取り出す
   const idioms = [];
   while (idioms.length < KAICHI_IDIOMS_PER_SHEET && idiomPool.length) {
@@ -2766,21 +2860,20 @@ function generateKaichiPdf() {
   const sheetCount = kaichiSel.sheets;
   const qcount = kaichiSel.qcount;
   const need = sheetCount * qcount;
-  // 4年生 全学期プールをシャッフル。足りなければ繰り返して補充する
-  let pool = shuffle([...buildPool(4, 0)]);
-  while (pool.length < need) {
-    pool = pool.concat(shuffle([...buildPool(4, 0)]));
-  }
+  const base = buildPool(4, 0);
+  // 書き：4年生 全学期プールをシャッフル。足りなければ繰り返して補充する
+  let writePool = refill(base, need);
+  // 読み：4年生の漢字プールと、入試頻出の読みプールを分けて持つ
+  let readPool = refill(base, need);
+  let readExtraPool = refill(READING_EXTRA, need);
   // 大問二：慣用句・ことわざプール。枚数ぶん足りなければ繰り返して補充する
   const idiomNeed = sheetCount * KAICHI_IDIOMS_PER_SHEET;
   const kaichiIdioms = IDIOMS.filter(it => KAICHI_IDIOM_CATS.includes(it.cat));
-  let idiomPool = shuffle([...kaichiIdioms]);
-  while (idiomPool.length < idiomNeed) {
-    idiomPool = idiomPool.concat(shuffle([...kaichiIdioms]));
-  }
+  let idiomPool = refill(kaichiIdioms, idiomNeed);
   const sheets = [];
+  const pools = { read: readPool, readExtra: readExtraPool, write: writePool, idiom: idiomPool };
   for (let s = 0; s < sheetCount; s++) {
-    sheets.push(buildKaichiSheet(pool, qcount, idiomPool));
+    sheets.push(buildKaichiSheet(pools, qcount));
   }
   const html = buildKaichiHtml(sheets);
   const w = window.open('', '_blank');
