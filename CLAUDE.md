@@ -50,8 +50,9 @@
   （UI上の回選択は削除済み・データは維持）
 
 ## 公開情報
-- GitHub: https://github.com/Wataru-Goto-dev/My-WGS-Project
-- GitHub Pages: https://wataru-goto-dev.github.io/My-WGS-Project/
+- GitHub: https://github.com/wg-dev-env/My-WGS-Project
+- GitHub Pages: https://wg-dev-env.github.io/My-WGS-Project/
+- 公開方法: main ブランチのルートを GitHub Pages が直接公開（push すると自動でデプロイされる）
 
 ## 注意事項
 - 作業前にフォルダ全体を探索しないこと
